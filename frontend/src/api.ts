@@ -28,9 +28,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   const resp = await fetch(path, { ...options, headers })
   if (resp.status === 401) {
+    // 登录接口的 401 自带"口令错误"等后端信息，优先透出
+    let detail = '未授权，请先登录'
+    try {
+      const data = (await resp.json()) as { detail?: string }
+      if (data?.detail) detail = String(data.detail)
+    } catch {
+      /* 非 JSON 错误体 */
+    }
     setToken('')
     window.dispatchEvent(new CustomEvent('aiwb:unauthorized'))
-    throw new ApiError('未授权，请先登录', 401)
+    throw new ApiError(detail, 401)
   }
   if (!resp.ok) {
     let detail = `HTTP ${resp.status}`

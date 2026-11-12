@@ -125,7 +125,10 @@
     </template>
 
     <!-- 历史 -->
-    <el-divider content-position="left">历史任务</el-divider>
+    <el-divider content-position="left">
+      历史任务
+      <el-button link type="primary" size="small" style="margin-left: 8px" @click="refreshHistory">刷新</el-button>
+    </el-divider>
     <el-table :data="history" size="small" @row-click="loadJob">
       <el-table-column prop="created_at" label="时间" width="170" />
       <el-table-column prop="id" label="任务 ID" width="240" class-name="mono" />

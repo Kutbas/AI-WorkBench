@@ -86,8 +86,14 @@ app.mount("/api/files/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 
 # 前端 SPA：dist 存在则托管（生产/本地构建预览）；开发模式走 Vite 5173
-DIST = PROJECT_ROOT / "frontend" / "dist"
-if DIST.is_dir():
+# 查找顺序：DIST_DIR 环境变量（容器内用）→ 项目内 frontend/dist → 项目根 static/
+_DIST_CANDIDATES = [
+    Path(os.environ["DIST_DIR"]) if os.environ.get("DIST_DIR") else None,
+    PROJECT_ROOT / "frontend" / "dist",
+    PROJECT_ROOT / "static",
+]
+DIST = next((d for d in _DIST_CANDIDATES if d and d.is_dir()), None)
+if DIST is not None:
     dist_root = DIST.resolve()
 
     @app.get("/{full_path:path}", include_in_schema=False)

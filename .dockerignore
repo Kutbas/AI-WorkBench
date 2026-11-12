@@ -1,0 +1,13 @@
+# 运行时数据与密钥绝不进镜像
+data/
+.env
+.env.*
+
+# 本地开发产物
+.git/
+backend/.venv/
+**/__pycache__/
+frontend/node_modules/
+frontend/dist/
+*.log
+.DS_Store

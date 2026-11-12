@@ -1,0 +1,28 @@
+[project]
+name = "ai-workbench-backend"
+version = "0.1.0"
+description = "AI-WorkBench 后端：图像生成（DMXAPI）、SoMark 文档解析、腾讯 COS 图床"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "httpx>=0.27",
+    "cos-python-sdk-v5>=1.9.35",
+    "python-multipart>=0.0.12",
+    "python-dotenv>=1.2.4",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.7",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+ignore = [
+    "BLE001", # 任务 runner 需要兜底捕获所有异常并记入任务错误
+    "B008",   # FastAPI File(...)/Form(...) 参数默认值的官方写法
+]

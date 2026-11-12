@@ -35,7 +35,29 @@ cd backend && uv sync && uv run uvicorn app.main:app --reload --port 8000
 cd frontend && npm install && npm run dev
 ```
 
-## 服务器部署（Ubuntu + Docker）
+## 一键脚本
+
+**本机（开发环境）**：
+
+```bash
+./start.sh   # 一键开启生产容器：构建（国内源加速）→ 启动 → 健康检查 → http://localhost:8720
+./stop.sh    # 一键关闭（./data 数据与镜像保留，随时可再启）
+```
+
+**服务器（Ubuntu）**：
+
+```bash
+git clone https://github.com/Kutbas/AI-WorkBench.git && cd AI-WorkBench
+./deploy.sh            # 一键部署：首装交互式生成 .env（口令必填可随机、密钥可跳过）；更新时自动 git pull + 重建
+./deploy.sh status     # 查看容器与服务状态
+./deploy.sh logs       # 跟踪日志
+./deploy.sh restart    # 重启（改 .env 后生效用）
+./deploy.sh down       # 停止（数据保留）
+```
+
+> 脚本默认使用国内镜像源加速构建（npmmirror / aliyun pypi），可用环境变量 `NPM_REGISTRY` / `PIP_INDEX_URL` / `PORT` 覆盖。
+
+## 手动部署（等价于 deploy.sh）
 
 ```bash
 git clone https://github.com/Kutbas/AI-WorkBench.git

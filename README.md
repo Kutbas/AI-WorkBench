@@ -46,6 +46,17 @@ docker compose up -d --build
 # 访问 http://<服务器IP>:8720
 ```
 
+国内网络构建加速（npm/pypi 走镜像源）：
+
+```bash
+docker compose build \
+  --build-arg NPM_REGISTRY=https://registry.npmmirror.com \
+  --build-arg PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+```
+
+依赖说明：容器内用 `backend/requirements.txt`（由 `uv.lock` 导出、带 hash 锁定）经 pip 安装。
+**改动后端依赖后需重新导出**：`cd backend && uv export --frozen --no-dev --no-emit-project -o requirements.txt`
+
 数据持久化在宿主 `./data`（配置、图片、解析结果、任务记录）。反向代理（1Panel/nginx）时保留 `/api` 前缀即可。
 
 > 安全提醒：COS 密钥与 API Key 只放在服务器的 `.env`（不入库）。若怀疑泄露，请到腾讯云控制台轮换 SecretKey。

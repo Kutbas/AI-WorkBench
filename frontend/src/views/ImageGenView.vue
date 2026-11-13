@@ -78,6 +78,13 @@
                 </el-select>
               </el-form-item>
             </el-col>
+            <el-col :span="8">
+              <el-form-item label="复制格式">
+                <el-select v-model="linkFormat" style="width: 100%">
+                  <el-option v-for="f in LINK_FORMATS" :key="f.value" :label="f.label" :value="f.value" />
+                </el-select>
+              </el-form-item>
+            </el-col>
           </el-row>
         </el-collapse-item>
       </el-collapse>
@@ -99,10 +106,10 @@
           <span v-if="t.error" class="err">{{ t.error }}</span>
         </div>
         <div class="img-grid">
-          <div v-for="img in t.images ?? []" :key="img.filename" class="img-cell">
+          <div v-for="(img, ii) in t.images ?? []" :key="img.filename" class="img-cell">
             <el-image :src="imgUrl(img.filename)" :preview-src-list="[imgUrl(img.filename)]" fit="contain" lazy />
             <div class="img-ops">
-              <el-button link type="primary" size="small" @click="copy(img.cos_url ?? '')">复制图床链接</el-button>
+              <el-button link type="primary" size="small" @click="copyImage(t, img, ii)">复制{{ formatLabel }}</el-button>
               <a :href="imgUrl(img.filename)" :download="img.filename">
                 <el-button link type="primary" size="small">下载</el-button>
               </a>
@@ -149,7 +156,7 @@
 <script setup lang="ts">
 import { Delete, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { api, type Job, type SoMarkTask } from '../api'
 
 interface PromptCard {
@@ -187,10 +194,57 @@ function imgUrl(filename: string): string {
   return `/api/files/images/${encodeURIComponent(filename)}`
 }
 
-async function copy(text: string) {
-  if (!text) return
+// ---------- 图床链接多格式复制 ----------
+
+type LinkFormat = 'url' | 'markdown' | 'html' | 'ubb'
+
+const LINK_FORMATS: { value: LinkFormat; label: string }[] = [
+  { value: 'url', label: 'URL（纯链接）' },
+  { value: 'markdown', label: 'Markdown' },
+  { value: 'html', label: 'HTML' },
+  { value: 'ubb', label: 'UBB' },
+]
+
+const LINK_FORMAT_KEY = 'aiwb_link_format'
+
+function loadLinkFormat(): LinkFormat {
+  const saved = localStorage.getItem(LINK_FORMAT_KEY)
+  return LINK_FORMATS.some((f) => f.value === saved) ? (saved as LinkFormat) : 'url'
+}
+
+const linkFormat = ref<LinkFormat>(loadLinkFormat())
+watch(linkFormat, (v) => localStorage.setItem(LINK_FORMAT_KEY, v))
+
+const formatLabel = computed(() => LINK_FORMATS.find((f) => f.value === linkFormat.value)?.label.split('（')[0] ?? '')
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function formatLink(url: string, alt: string): string {
+  switch (linkFormat.value) {
+    case 'markdown':
+      return `![${alt}](${url})`
+    case 'html':
+      return `<img src="${url}" alt="${escapeHtml(alt)}" />`
+    case 'ubb':
+      return `[img]${url}[/img]`
+    default:
+      return url
+  }
+}
+
+async function copyImage(task: { name: string; images?: unknown[] }, img: { cos_url?: string }, imgIdx: number) {
+  const url = img.cos_url
+  if (!url) {
+    ElMessage.warning('该图片尚未上传图床（可先点"重传图床"）')
+    return
+  }
+  // 多图（n>1）时 alt 加序号区分
+  const alt = (task.images?.length ?? 1) > 1 ? `${task.name}-${imgIdx + 1}` : task.name
+  const text = formatLink(url, alt)
   await navigator.clipboard.writeText(text)
-  ElMessage.success('已复制')
+  ElMessage.success({ message: `已复制：${text.length > 60 ? text.slice(0, 60) + '…' : text}`, duration: 3000 })
 }
 
 onMounted(async () => {

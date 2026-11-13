@@ -23,6 +23,31 @@ need_docker() {
     echo "✗ docker compose 插件不可用（需 Docker 20.10+）"
     exit 1
   fi
+  # daemon 连通检查：macOS 自动拉起 Docker Desktop 并等待就绪
+  # 探测加 5s 超时：Docker Desktop 半就绪时 docker CLI 可能无限挂死（macOS 无 timeout 命令，用 perl alarm）
+  docker_ready() {
+    perl -e 'alarm 5; exec @ARGV' docker info >/dev/null 2>&1
+  }
+  if docker_ready; then
+    return 0
+  fi
+  if [ "$(uname -s)" = "Darwin" ] && [ -d /Applications/Docker.app ]; then
+    echo "==> Docker Desktop 未运行，正在启动…"
+    open -a Docker || true
+    for _ in $(seq 1 60); do
+      if docker_ready; then
+        echo "==> Docker daemon 已就绪"
+        return 0
+      fi
+      printf "."
+      sleep 2
+    done
+    echo ""
+    echo "✗ 等待 Docker daemon 超时（120s），请手动打开 Docker Desktop 后重试"
+    exit 1
+  fi
+  echo "✗ Docker daemon 未运行：请执行 sudo systemctl start docker 后重试"
+  exit 1
 }
 
 wait_healthy() {
